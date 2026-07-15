@@ -1,5 +1,6 @@
 package com.example.bot.entity;
 
+import game.Card;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -24,26 +25,26 @@ public class Users {
 
     private String status;
 
-    private Integer balance;
+    private Double balance;
 
-    private Integer bet;
+    private Double bet;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "dealer_cards",columnDefinition = "jsonb")
-    private ArrayList<Pair<Integer, String>> dealerCards = new ArrayList<>();
+    private ArrayList<Card> dealerCards = new ArrayList<>();
 
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
-    private ArrayList<Pair<Integer, String>>  cards = new ArrayList<>();
+    private ArrayList<Card>  cards = new ArrayList<>();
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "player_cards",columnDefinition = "jsonb")
-    private ArrayList<ArrayList<Pair<Integer, String>>>  playerCards = new ArrayList<>();
+    private ArrayList<ArrayList<Card>>  playerCards = new ArrayList<>();
 
     public Users(Long chatId){
         this.chatId = chatId;
-        balance = 1000;
+        balance = 1000.0;
     }
 
 }
