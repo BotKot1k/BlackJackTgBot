@@ -20,6 +20,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Component
@@ -56,8 +57,67 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
 
                     Blackjack bj = new Blackjack(user.get());
                     bj.startGame();
-                    user.get().setStatus(String.valueOf(UsersStatus.GAME_CHOICE1));
+
                     usersRepository.save(user.get());
+                    return;
+                } catch (NumberFormatException e){
+                    sendMessage("Введите целочисленное число", chatId);
+                    return;
+                }
+            }
+
+            if(user.isPresent() && user.get().getStatus() !=null  && user.get().getStatus().equals("GAME_CHOICE1")){
+                try{
+                    Integer choice = Integer.parseInt(update.getMessage().getText());
+
+                    if(!(choice == 1 || choice == 2 || choice == 3 || choice == 4)){
+                        sendMessage("Введите число от 1 до 4 включительно", chatId);
+                        return;
+                    }
+                    Blackjack bj = new Blackjack(user.get());
+                    bj.choice(choice);
+
+                    usersRepository.save(user.get());
+
+                    return;
+                } catch (NumberFormatException e){
+                    sendMessage("Введите целочисленное число", chatId);
+                    return;
+                }
+            }
+
+            if(user.isPresent() && user.get().getStatus() !=null  && (user.get().getStatus().equals("GAME_REPEAT_CHOICE1")||
+                    user.get().getStatus().equals("GAME_REPEAT_CHOICE21") || user.get().getStatus().equals("GAME_REPEAT_CHOICE22"))){
+                String message = update.getMessage().getText();
+
+
+                if(message.equals("да") || message.equals("Да") || message.equals("нет") || message.equals("Нет")){
+                    Blackjack bj = new Blackjack(user.get());
+
+                    bj.repeatChoice(message);
+                    usersRepository.save(user.get());
+                } else{
+                    sendMessage("Введите Да или нет", chatId);
+                }
+                return;
+            }
+
+            if(user.isPresent() && user.get().getStatus() !=null  && (user.get().getStatus().equals("GAME_CHOICE21")||
+                    user.get().getStatus().equals("GAME_CHOICE22"))){
+                try{
+                    Integer choice = Integer.parseInt(update.getMessage().getText());
+
+                    if(!(choice == 1 || choice == 2 || choice == 3)){
+                        sendMessage("Введите число от 1 до 3 включительно", chatId);
+                        return;
+                    }
+                    Blackjack bj = new Blackjack(user.get());
+
+                    bj.choiceInDoubleGame(choice);
+
+                    usersRepository.save(user.get());
+
+                    return;
                 } catch (NumberFormatException e){
                     sendMessage("Введите целочисленное число", chatId);
                     return;

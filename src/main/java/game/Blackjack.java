@@ -17,16 +17,14 @@ public class Blackjack {
     private Double bet;
 
     private ArrayList<Card> cards;
-    private final ArrayList<Card> startPlayerCards = new ArrayList<>();
+    private ArrayList<Card> startPlayerCards = new ArrayList<>();
     private final ArrayList<ArrayList<Card>> playerCards;
     private final ArrayList<Card> dealerCards;
 
-    private Integer count = 1;
     private boolean firstDealerAce = false;
     private boolean insurance = false;
 
-    private Random rd = new Random();
-    private Scanner sc = new Scanner(System.in);
+    private final Random rd = new Random();
     private TelegramClient gameClient = new OkHttpTelegramClient(Constant.BOTTOKEN);
 
     private Long chatId;
@@ -60,95 +58,37 @@ public class Blackjack {
         this.balance = this.user.getBalance();
     }
 
-    public void startGame(){
-        checkCards();
+        public void startGame(){
+            checkCards();
 
-        getSomeCardPlayer(startPlayerCards);
-        getSomeCardPlayer(startPlayerCards);
-        printAllCards(startPlayerCards, 1);
+            getSomeCardPlayer(startPlayerCards);
+            getSomeCardPlayer(startPlayerCards);
+            printAllCards(startPlayerCards, 1);
 
-        sendMessage("\n     Ваш счёт: " + getScore(startPlayerCards), chatId);
-
-
-        getSomeCardDealer();
-        printAllCards(dealerCards, 0);
-
-        if(getScore(startPlayerCards) == 21 && !firstDealerAce ){
-            blackJack();
-            return;
-        }
-        playerCards.add(startPlayerCards);
-
-        user.setDealerCards(dealerCards);
-        user.setPlayerCards(playerCards);
-        user.setCards(cards);
-
-        sendMessage("Желаете взять карту (1), удвоить ставку (2), разделить карты (3), ничего не делать (4)", chatId);
-    }
+            sendMessage("\n     Ваш счёт: " + getScore(startPlayerCards), chatId);
 
 
-    public void game(){
+            getSomeCardDealer();
+            printAllCards(dealerCards, 0);
 
-        checkCards();
-
-        getSomeCardPlayer(startPlayerCards);
-        getSomeCardPlayer(startPlayerCards);
-        printAllCards(startPlayerCards, 1);
-
-        System.out.println();
-        System.out.println("     Ваш счёт: " + getScore(startPlayerCards));
-
-
-
-        getSomeCardDealer();
-        printAllCards(dealerCards, 0);
-
-        if(getScore(startPlayerCards) == 21 /*&& !firstDealerAce*/ ){ // Допилить страховку
-            blackJack();
-            return;
-        }
-
-
-        if(getScore(startPlayerCards) == 21 && firstDealerAce){
-            System.out.println("Желаете ли вы перестраховаться в данной ситуации? (Да/нет)");
-            String answer = sc.next();
-            if(answer.equals("Да") || answer.equals("да") || answer.equals("1")){
-                win();
+            if(getScore(startPlayerCards) == 21 && !firstDealerAce ){
+                blackJack();
                 return;
-            } else{
-                getSomeCardDealer();
-                printAllCards(dealerCards, 0);
-
-                if(getScore(dealerCards) == 21){
-                    System.out.println("Ничья");
-                    return;
-                } else {
-                    blackJack();
-                }
             }
+            user.setStatus(String.valueOf(UsersStatus.GAME_CHOICE1));
+            playerCards.add(startPlayerCards);
+
+            System.out.println(playerCards.size());
+            System.out.println(playerCards.get(0));
+            user.setDealerCards(dealerCards);
+            user.setPlayerCards(playerCards);
+            user.setCards(cards);
+
+            sendMessage("Желаете взять карту (1), удвоить ставку (2), разделить карты (3), ничего не делать (4)", chatId);
+            // Сделать клаву
         }
 
-        if(firstDealerAce){
-            System.out.print("Желаете ли вы застраховать ставку? (1/0)");
-            String answer = sc.next();
-            if(Objects.equals(answer, "1")){
-                if(balance < bet/2){
-                    System.out.println("Не хватает денег");
-                    return;
-                }
-                insurance = true;
-            }
-        }
-
-        if(!choice()){
-            System.out.println("Ошибка");
-            return;
-        }
-
-
-
-
-
+    public void endGame(){
         for(int i = 0; i < playerCards.size(); i++){
             ArrayList<Card> currentCards = playerCards.get(i);
             if(getScore(currentCards) > 21){
@@ -166,28 +106,18 @@ public class Blackjack {
         }
         printAllCards(dealerCards, 0);
 
-        System.out.println();
-        System.out.println("     Счёт дилера: " + getScore(dealerCards));
 
-        // Итоги
+        sendMessage("\n     Счёт дилера: " + getScore(dealerCards), chatId);
+
         int count = 1;
+
         for(ArrayList<Card> currentCards : playerCards){
-            System.out.println("Игра №"+count);
-            //printAllCards(currentCards, 1);
-            System.out.println("Ваш счёт: " + getScore(currentCards));
+            sendMessage("Игра №"+count +"\nВаш счёт: " + getScore(currentCards), chatId);
             count++;
+
             if(getScore(dealerCards) > 21){
                 win();
                 continue;
-            }
-
-            if(dealerCards.size() == 2 && getScore(dealerCards) == 21 && insurance){
-                System.out.println("У дилера блэкджек! Страховка сыграла");
-                bet/=2;
-                win();
-            } else if(insurance) {
-                System.out.println("Страховка не сыграла");
-                balance -= bet/2;
             }
 
             if(getScore(currentCards) > getScore(dealerCards)){
@@ -195,11 +125,214 @@ public class Blackjack {
             } else if (getScore(currentCards) < getScore(dealerCards)){
                 lose();
             } else{
-                System.out.println("Ничья");
+                sendMessage("Ничья", chatId);
             }
-            System.out.println();
+        }
+        user.setDealerCards(new ArrayList<>());
+        user.setPlayerCards(new ArrayList<>());
+        user.setStatus(String.valueOf(UsersStatus.WAIT_NEW_COMMAND));
+    }
+
+    public void repeatChoice(String answer){
+        switch (user.getStatus()){
+            case "GAME_REPEAT_CHOICE1":
+                if(answer.equals("да") || answer.equals("Да")){
+                    startPlayerCards = playerCards.get(0);
+                    playerCards.remove(0);
+
+                    getSomeCardPlayer(startPlayerCards);
+                    printAllCards(startPlayerCards, 1);
+                    sendMessage("     Ваш счёт: " + getScore(startPlayerCards), chatId);
+
+                    if(getScore(startPlayerCards) > 21) {
+                        playerCards.add(startPlayerCards);
+                        endGame();
+                    }
+
+                    sendMessage("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
+
+                    playerCards.add(startPlayerCards);
+                } else{
+                    endGame();
+                }
+                break;
+            case "GAME_REPEAT_CHOICE21":
+                if(answer.equals("да")){
+                    getSomeCardPlayer(playerCards.get(0));
+                    printAllCards(playerCards.get(0), 1);
+                    sendMessage("     Ваш счёт: " + getScore(playerCards.get(0)), chatId);
+
+                    if(getScore(playerCards.get(0)) > 21) {
+                        user.setStatus("GAME_CHOICE22");
+                        return;
+                    }
+
+                    sendMessage("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
+                } else{
+                    user.setStatus("GAME_CHOICE22");
+                }
+                break;
+            case "GAME_REPEAT_CHOICE22":
+                if(answer.equals("да")){
+                    getSomeCardPlayer(playerCards.get(1));
+                    printAllCards(playerCards.get(1), 1);
+                    sendMessage("     Ваш счёт: " + getScore(playerCards.get(1)), chatId);
+
+                    if(getScore(playerCards.get(1)) > 21) {
+                        endGame();
+                        return;
+                    }
+
+                    sendMessage("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
+                } else{
+                    endGame();
+                }
+                break;
         }
     }
+
+    public void choiceInDoubleGame(Integer numb){
+        int count;
+        if(user.getStatus().equals("GAME_CHOICE21")){count = 0;}
+        else{count = 1;}
+
+        switch (numb){
+            case 3:
+                if(user.getStatus().equals("GAME_CHOICE22")) {endGame();}
+                else{user.setStatus("GAME_CHOICE22"); doubleGame();}
+                return ;
+            case 2: // не работает
+                sendMessage("Функция временно не работает, выберите другую", chatId);
+                break;
+                /*if(bet * 2 > balance){
+                    sendMessage("Внимание! Новая ставка не может быть больше баланса, выберите другую функцию", chatId);
+                    return ;
+                }
+                bet *=2; // Вот корень зла
+
+                System.out.println("Вы взяли карту.");
+                getSomeCardPlayer(playerCards.get(count));
+                printAllCards(playerCards.get(count), 1);
+                sendMessage("     Ваш счёт: " + getScore(playerCards.get(count)), chatId);
+
+                if(count == 1){endGame();}
+                else{user.setStatus("GAME_CHOICE22");}
+                return ;*/
+            case 1:
+
+                getSomeCardPlayer(playerCards.get(count));
+                printAllCards(playerCards.get(count), 1);
+                sendMessage("     Ваш счёт: " + getScore(playerCards.get(count)), chatId);
+
+                if(getScore(playerCards.get(count)) > 21) {
+                    if(count == 1) endGame();
+                    else{user.setStatus("GAME_CHOICE_22");
+                        doubleGame();
+                    }
+                    return;
+                }
+
+                sendMessage("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
+                if(count == 0){
+                    user.setStatus("GAME_REPEAT_CHOICE21");
+                } else{
+                    user.setStatus("GAME_REPEAT_CHOICE22");
+                }
+                break;
+        }
+    }
+
+    public void choice(Integer choice){
+        startPlayerCards = playerCards.get(0);
+        playerCards.remove(0);
+        switch (choice){
+            case 1:
+                getSomeCardPlayer(startPlayerCards);
+                printAllCards(startPlayerCards, 1);
+                sendMessage("     Ваш счёт: " + getScore(startPlayerCards), chatId);
+
+                if(getScore(startPlayerCards) > 21) {
+                    playerCards.add(startPlayerCards);
+                    endGame();
+                    user.setStatus("WAIT_NEW_COMMAND");
+                    return;
+                }
+
+                sendMessage("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
+                user.setStatus(String.valueOf(UsersStatus.GAME_REPEAT_CHOICE1));
+                playerCards.add(startPlayerCards);
+                break;
+
+            case 2:
+                if(bet * 2 > balance){
+                    sendMessage("Недостаточно денег для удвоения ставки, выберите другую функцию", chatId);
+                    playerCards.add(startPlayerCards);
+                    return;
+                }
+                bet *=2;
+                sendMessage("Вы взяли карту.", chatId);
+                getSomeCardPlayer(startPlayerCards);
+                printAllCards(startPlayerCards, 1);
+                sendMessage("     Ваш счёт: " + getScore(startPlayerCards), chatId);
+
+                playerCards.add(startPlayerCards);
+                endGame();
+                return;
+
+            case 3:
+                if(balance < bet * 2){
+                    sendMessage("Недостаточно денег для ставки, выберите другую функцию", chatId);
+                    playerCards.add(startPlayerCards);
+                    return ;
+                }
+                if (!((getScore(startPlayerCards) % 2 == 0 && Objects.equals(startPlayerCards.get(0).getValues(), startPlayerCards.get(1).getValues()))
+                        || (startPlayerCards.get(0).getValues() >=10 && startPlayerCards.get(1).getValues() >=10) && (startPlayerCards.size()==2)) ){
+                    sendMessage("Не соблюдены условия сплита, выберите другую функцию", chatId);
+                    playerCards.add(startPlayerCards);
+                    return ;
+                }
+                ArrayList<Card> newPacks = new ArrayList<>();
+                newPacks.add(startPlayerCards.get(0));
+                playerCards.add(newPacks);
+
+                newPacks = new ArrayList<>();
+                newPacks.add(startPlayerCards.get(1));
+                playerCards.add(newPacks);
+
+                doubleGame();
+                break;
+            case 4:
+                playerCards.add(startPlayerCards);
+                endGame();
+                break;
+
+        }
+    }
+
+    private void doubleGame(){
+        int count;
+        if(user.getStatus().equals("GAME_CHOICE1")) count =0;
+        else {count = 1;}
+
+        sendMessage("Рука №" +(count+1), chatId);
+
+        ArrayList<Card> currentCards = playerCards.get(count);
+
+
+        getSomeCardPlayer(currentCards);
+        printAllCards(currentCards, 1);
+
+        if(getScore(currentCards) == 21){ // Блэкджек при сплите не считается блэкджеком
+            playerCards.add(currentCards);
+            return ;
+        }
+
+        sendMessage("Желаете взять карту (1), удвоить ставку (2), ничего не делать (3)", chatId);
+        if(count == 0) {user.setStatus(String.valueOf(UsersStatus.GAME_CHOICE21));}
+        else{user.setStatus(String.valueOf(UsersStatus.GAME_CHOICE22));}
+    }
+
+
 
     private void blackJack(){
         sendMessage("Блэкджек!!! Вы выйграли: " + (1.5 * bet), chatId);
@@ -246,7 +379,7 @@ public class Blackjack {
     }
 
     private void checkCards(){
-        if(cards == null || cards.isEmpty()){
+        if(cards == null || cards.isEmpty() || cards.size() < 17){
             cards = getNewCards();
         }
     }
@@ -289,144 +422,6 @@ public class Blackjack {
         return sum;
     }
 
-    private boolean doubleGame(Card card){
-        System.out.println("Колода №" +count);
-        //System.out.println(card.getValues() + " " + card.getSuit() + "    " + player);
-
-        ArrayList<Card> currentCards = new ArrayList<>();
-        currentCards.add(card);
-
-        count++;
-        getSomeCardPlayer(currentCards);
-        printAllCards(currentCards, 1);
-
-        if(getScore(currentCards) == 21){ // Блэкджек при сплите не считается блэкджеком
-            playerCards.add(currentCards);
-            return true;
-        }
-        if(!choiceInDoubleGame(currentCards)){
-            System.out.println("Ошибка");
-            return false;
-        }
-        return true;
-    }
-
-    private boolean choice(){
-        String answer;
-        System.out.println("Желаете взять карту (1), удвоить ставку (2), разделить карты (3), ничего не делать (4)");
-        int numb = sc.nextInt();
-
-        switch (numb){
-            case 1:
-                do{
-                    getSomeCardPlayer(startPlayerCards);
-                    printAllCards(startPlayerCards, 1);
-                    System.out.println("     Ваш счёт: " + getScore(startPlayerCards));
-
-                    if(getScore(startPlayerCards) > 21) {
-                        playerCards.add(startPlayerCards);
-                        return true;
-                    }
-
-
-                    System.out.println("Желаете ли взять ещё карту? (Да / нет)");
-                    answer = sc.next();
-
-                }while(answer.equals("Да") || answer.equals("да") || answer.equals("1"));
-                playerCards.add(startPlayerCards);
-                return true;
-
-            case 2:
-                if(bet * 2 > balance){
-                    System.out.println("Внимание! Новая ставка не может быть больше баланса");
-                    return false;
-                }
-                bet *=2;
-                System.out.println("Вы взяли: ");
-                getSomeCardPlayer(startPlayerCards);
-                printAllCards(startPlayerCards, 1);
-                System.out.println("     Ваш счёт: " + getScore(startPlayerCards));
-
-                if(getScore(startPlayerCards) > 21) {
-                    playerCards.add(startPlayerCards);
-                    return true;
-                }
-                playerCards.add(startPlayerCards);
-                return true;
-
-            case 3:
-                if(balance < bet * 2){
-                    System.out.println("Недостаточно денег для ставки");
-                    return false;
-                }
-                if (!((getScore(startPlayerCards) % 2 == 0 && Objects.equals(startPlayerCards.get(0).getValues(), startPlayerCards.get(1).getValues()))
-                        || (startPlayerCards.get(0).getValues() >=10 && startPlayerCards.get(1).getValues() >=10) && (startPlayerCards.size()==2)) ){
-                    System.out.println("Не соблюдены условия сплита");
-                    return false;
-                }
-
-
-                return doubleGame(startPlayerCards.get(0)) && doubleGame(startPlayerCards.get(1));
-            case 4:
-                playerCards.add(startPlayerCards);
-                return true;
-            default:
-                System.out.println("Неправильная операция");
-                return false;
-        }
-    }
-
-    private boolean choiceInDoubleGame( ArrayList<Card> currentPlayerCards){
-        String answer;
-
-        System.out.println("Желаете взять карту (1), удвоить ставку (2), ничего не делать (3)");
-        int numb = sc.nextInt();
-
-        switch (numb){
-            case 3:
-                playerCards.add(currentPlayerCards);
-                return true;
-            case 2:
-                if(bet * 2 > balance){
-                    System.out.println("Внимание! Новая ставка не может быть больше баланса");
-                    return false;
-                }
-                bet *=2;
-                System.out.println("Вы взяли: ");
-                getSomeCardPlayer(currentPlayerCards);
-                printAllCards(currentPlayerCards, 1);
-                System.out.println("     Ваш счёт: " + getScore(currentPlayerCards));
-
-                if(getScore(currentPlayerCards) > 21) {
-                    playerCards.add(currentPlayerCards);
-                    return true;
-                }
-
-                return true;
-            case 1:
-                do{
-                    System.out.println("Вы взяли: ");
-                    getSomeCardPlayer(currentPlayerCards);
-                    printAllCards(currentPlayerCards, 1);
-                    System.out.println("     Ваш счёт: " + getScore(currentPlayerCards));
-
-                    if(getScore(currentPlayerCards) > 21) {
-                        playerCards.add(currentPlayerCards);
-                        return true;
-                    }
-
-                    System.out.println("Желаете ли взять ещё карту? (Да/нет) (1/0)");
-                    answer = sc.next();
-
-                }while(answer.equals("Да") || answer.equals("да") || answer.equals("1") );
-                playerCards.add(currentPlayerCards);
-                return true;
-            default:
-                System.out.println("Неправильная операция");
-                return false;
-
-        }
-    }
 
     private void printAllCards(ArrayList<Card> card, int n){ // 1 if player; 0 if dealer
         if(n == 1) sendMessage("Ваши карты: ", chatId);
