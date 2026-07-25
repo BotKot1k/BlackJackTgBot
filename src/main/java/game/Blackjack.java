@@ -98,7 +98,10 @@ public class Blackjack {
             }
         }
 
-        if(playerCards.isEmpty()) return;
+        if(playerCards.isEmpty()){
+            user.setStatus(String.valueOf(UsersStatus.WAIT_NEW_COMMAND));
+            return;
+        }
 
 
 
@@ -148,6 +151,7 @@ public class Blackjack {
                     if(getScore(startPlayerCards) > 21) {
                         playerCards.add(startPlayerCards);
                         endGame();
+                        return;
                     }
 
                     botInteraction.sendMessageInGameClient("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
@@ -255,7 +259,12 @@ public class Blackjack {
                 if(getScore(startPlayerCards) > 21) {
                     playerCards.add(startPlayerCards);
                     endGame();
-                    user.setStatus("WAIT_NEW_COMMAND");
+                    return;
+                }
+
+                if(getScore(startPlayerCards) == 21){
+                    playerCards.add(startPlayerCards);
+                    endGame();
                     return;
                 }
 
