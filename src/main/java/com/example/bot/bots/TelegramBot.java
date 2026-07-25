@@ -33,6 +33,8 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
     @Autowired
     private UsersRepository usersRepository;
 
+    @Autowired
+    private BotInteraction botInteraction;
     @Override
     public void consume(Update update) {
         Long chatId = update.getMessage().getChatId();
@@ -40,20 +42,20 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
 
         if(update.getMessage().hasText()){
             if(user.isPresent() && user.get().getStatus() !=null  && user.get().getStatus().equals("WAIT_MESSAGE")){
-                sendMessageInAdmin(update.getMessage().getChatId() +" "+update.getMessage().getText(), Constant.ADMINCHATID);
+                botInteraction.sendMessageInAdminClient(update.getMessage().getChatId() +" "+update.getMessage().getText());
                 usersRepository.setStatus(String.valueOf(UsersStatus.WAIT_NEW_COMMAND), chatId);
-                sendMessage("Сообщение успешно доставлено администрации", chatId);
+                botInteraction.sendMessageInGameClient("Сообщение успешно доставлено администрации", chatId);
             }
 
             if(user.isPresent() && user.get().getStatus() !=null  && user.get().getStatus().equals("WAIT_BET")){
                 try{
                     Double bet = Double.parseDouble(update.getMessage().getText());
                     if(usersRepository.findBalanceByChatId(chatId) < bet){
-                        sendMessage("Ставка не может быть больше вашего баланса", chatId);
+                        botInteraction.sendMessageInGameClient("Ставка не может быть больше вашего баланса", chatId);
                     }
                     usersRepository.setBet(bet, chatId);
                     user.get().setBet(bet);
-                    sendMessage("Ставка успешно поставлена", chatId);
+                    botInteraction.sendMessageInGameClient("Ставка успешно поставлена", chatId);
 
                     Blackjack bj = new Blackjack(user.get());
                     bj.startGame();
@@ -61,17 +63,17 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                     usersRepository.save(user.get());
                     return;
                 } catch (NumberFormatException e){
-                    sendMessage("Введите целочисленное число", chatId);
+                    botInteraction.sendMessageInGameClient("Введите целочисленное число", chatId);
                     return;
                 }
             }
 
             if(user.isPresent() && user.get().getStatus() !=null  && user.get().getStatus().equals("GAME_CHOICE1")){
                 try{
-                    Integer choice = Integer.parseInt(update.getMessage().getText());
+                    int choice = Integer.parseInt(update.getMessage().getText());
 
                     if(!(choice == 1 || choice == 2 || choice == 3 || choice == 4)){
-                        sendMessage("Введите число от 1 до 4 включительно", chatId);
+                        botInteraction.sendMessageInGameClient("Введите число от 1 до 4 включительно", chatId);
                         return;
                     }
                     Blackjack bj = new Blackjack(user.get());
@@ -81,7 +83,7 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
 
                     return;
                 } catch (NumberFormatException e){
-                    sendMessage("Введите целочисленное число", chatId);
+                    botInteraction.sendMessageInGameClient("Введите целочисленное число", chatId);
                     return;
                 }
             }
@@ -97,7 +99,7 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                     bj.repeatChoice(message);
                     usersRepository.save(user.get());
                 } else{
-                    sendMessage("Введите Да или нет", chatId);
+                    botInteraction.sendMessageInGameClient("Введите Да или нет", chatId);
                 }
                 return;
             }
@@ -108,7 +110,7 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                     Integer choice = Integer.parseInt(update.getMessage().getText());
 
                     if(!(choice == 1 || choice == 2 || choice == 3)){
-                        sendMessage("Введите число от 1 до 3 включительно", chatId);
+                        botInteraction.sendMessageInGameClient("Введите число от 1 до 3 включительно", chatId);
                         return;
                     }
                     Blackjack bj = new Blackjack(user.get());
@@ -119,7 +121,7 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
 
                     return;
                 } catch (NumberFormatException e){
-                    sendMessage("Введите целочисленное число", chatId);
+                    botInteraction.sendMessageInGameClient("Введите целочисленное число", chatId);
                     return;
                 }
             }
@@ -141,37 +143,37 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                        if(user.isEmpty()){
                             Users newUser = new Users(chatId);
                             usersRepository.save(newUser);
-                            sendMessage("Вы успешно зарегистрировались", chatId);
+                           botInteraction.sendMessageInGameClient("Вы успешно зарегистрировались", chatId);
                        } else{
-                           sendMessage("Вы уже зарегистрированы", chatId);
+                           botInteraction.sendMessageInGameClient("Вы уже зарегистрированы", chatId);
                        }
                        break;
 
                     case "balance":
                         Double balance = usersRepository.findBalanceByChatId(chatId);
                         if(user.isEmpty()){
-                            sendMessage("Напишите /start для работы с ботом", chatId);
+                            botInteraction.sendMessageInGameClient("Напишите /start для работы с ботом", chatId);
                             break;
                         }
 
-                        sendMessage("Ваш баланс: " + balance, chatId);
+                        botInteraction.sendMessageInGameClient("Ваш баланс: " + balance, chatId);
                         break;
                     case "help":
                         if(user.isEmpty()){
-                            sendMessage("Напишите /start для работы с ботом", chatId);
+                            botInteraction.sendMessageInGameClient("Напишите /start для работы с ботом", chatId);
                             break;
                         }
                         usersRepository.setStatus(String.valueOf(UsersStatus.WAIT_MESSAGE), chatId);
-                        sendMessage("Отправьте сообщение администратору", chatId);
+                        botInteraction.sendMessageInGameClient("Отправьте сообщение администратору", chatId);
                         break;
 
                     case "rules":
                         if (user.isEmpty()) {
-                            sendMessage("Напишите /start для работы с ботом", chatId);
+                            botInteraction.sendMessageInGameClient("Напишите /start для работы с ботом", chatId);
                             break;
                         }
 
-                        sendMessage("""
+                        botInteraction.sendMessageInGameClient("""
                             Правила игры
                             
                              Цель игры
@@ -217,13 +219,13 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
 
                     case "game":
                         if(user.isEmpty()){
-                            sendMessage("Напишите /start для работы с ботом", chatId);
+                            botInteraction.sendMessageInGameClient("Напишите /start для работы с ботом", chatId);
                             break;
                         }
 
                         if(user.get().getBalance() > 0){
-                            sendMessage("Игра успешно началась", chatId) ;
-                            sendMessage("Введите вашу ставку: ", chatId);
+                            botInteraction.sendMessageInGameClient("Игра успешно началась", chatId) ;
+                            botInteraction.sendMessageInGameClient("Введите вашу ставку: ", chatId);
                             usersRepository.setStatus(String.valueOf(UsersStatus.WAIT_BET), chatId);
                         }
                 }
@@ -232,18 +234,11 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
             }
             //sendMessage(String.valueOf(chatId), chatId);
         } else{
-            sendMessage("Данный тип данных не обрабатывается", chatId);
+            botInteraction.sendMessageInGameClient("Данный тип данных не обрабатывается", chatId);
         }
     }
 
-    public void sendMessage(String massage, Long chatId){
-        SendMessage sendMessage = new SendMessage(String.valueOf(chatId), massage);
-        try {
-                telegramClient.execute(sendMessage);
-            } catch (TelegramApiException e) {
-                e.printStackTrace();
-            }
-    }
+
 
     public void sendCustomKeyboard(String chatId) {
         // 1. Prepare the rows and buttons

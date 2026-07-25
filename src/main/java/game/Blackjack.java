@@ -2,6 +2,7 @@ package game;
 
 import com.example.bot.Constant;
 import com.example.bot.UsersStatus;
+import com.example.bot.bots.BotInteraction;
 import com.example.bot.entity.Users;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
@@ -25,7 +26,7 @@ public class Blackjack {
     private boolean insurance = false;
 
     private final Random rd = new Random();
-    private TelegramClient gameClient = new OkHttpTelegramClient(Constant.BOTTOKEN);
+    private final BotInteraction botInteraction = new BotInteraction();
 
     private Long chatId;
     private Users user;
@@ -65,7 +66,7 @@ public class Blackjack {
             getSomeCardPlayer(startPlayerCards);
             printAllCards(startPlayerCards, 1);
 
-            sendMessage("\n     Ваш счёт: " + getScore(startPlayerCards), chatId);
+            botInteraction.sendMessageInGameClient("\n     Ваш счёт: " + getScore(startPlayerCards), chatId);
 
 
             getSomeCardDealer();
@@ -84,7 +85,7 @@ public class Blackjack {
             user.setPlayerCards(playerCards);
             user.setCards(cards);
 
-            sendMessage("Желаете взять карту (1), удвоить ставку (2), разделить карты (3), ничего не делать (4)", chatId);
+            botInteraction.sendMessageInGameClient("Желаете взять карту (1), удвоить ставку (2), разделить карты (3), ничего не делать (4)", chatId);
             // Сделать клаву
         }
 
@@ -107,12 +108,12 @@ public class Blackjack {
         printAllCards(dealerCards, 0);
 
 
-        sendMessage("\n     Счёт дилера: " + getScore(dealerCards), chatId);
+        botInteraction.sendMessageInGameClient("\n     Счёт дилера: " + getScore(dealerCards), chatId);
 
         int count = 1;
 
         for(ArrayList<Card> currentCards : playerCards){
-            sendMessage("Игра №"+count +"\nВаш счёт: " + getScore(currentCards), chatId);
+            botInteraction.sendMessageInGameClient("Игра №"+count +"\nВаш счёт: " + getScore(currentCards), chatId);
             count++;
 
             if(getScore(dealerCards) > 21){
@@ -125,7 +126,7 @@ public class Blackjack {
             } else if (getScore(currentCards) < getScore(dealerCards)){
                 lose();
             } else{
-                sendMessage("Ничья", chatId);
+                botInteraction.sendMessageInGameClient("Ничья", chatId);
             }
         }
         user.setDealerCards(new ArrayList<>());
@@ -142,14 +143,14 @@ public class Blackjack {
 
                     getSomeCardPlayer(startPlayerCards);
                     printAllCards(startPlayerCards, 1);
-                    sendMessage("     Ваш счёт: " + getScore(startPlayerCards), chatId);
+                    botInteraction.sendMessageInGameClient("     Ваш счёт: " + getScore(startPlayerCards), chatId);
 
                     if(getScore(startPlayerCards) > 21) {
                         playerCards.add(startPlayerCards);
                         endGame();
                     }
 
-                    sendMessage("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
+                    botInteraction.sendMessageInGameClient("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
 
                     playerCards.add(startPlayerCards);
                 } else{
@@ -160,14 +161,14 @@ public class Blackjack {
                 if(answer.equals("да")){
                     getSomeCardPlayer(playerCards.get(0));
                     printAllCards(playerCards.get(0), 1);
-                    sendMessage("     Ваш счёт: " + getScore(playerCards.get(0)), chatId);
+                    botInteraction.sendMessageInGameClient("     Ваш счёт: " + getScore(playerCards.get(0)), chatId);
 
                     if(getScore(playerCards.get(0)) > 21) {
                         user.setStatus("GAME_CHOICE22");
                         return;
                     }
 
-                    sendMessage("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
+                    botInteraction.sendMessageInGameClient("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
                 } else{
                     user.setStatus("GAME_CHOICE22");
                 }
@@ -176,14 +177,14 @@ public class Blackjack {
                 if(answer.equals("да")){
                     getSomeCardPlayer(playerCards.get(1));
                     printAllCards(playerCards.get(1), 1);
-                    sendMessage("     Ваш счёт: " + getScore(playerCards.get(1)), chatId);
+                    botInteraction.sendMessageInGameClient("     Ваш счёт: " + getScore(playerCards.get(1)), chatId);
 
                     if(getScore(playerCards.get(1)) > 21) {
                         endGame();
                         return;
                     }
 
-                    sendMessage("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
+                    botInteraction.sendMessageInGameClient("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
                 } else{
                     endGame();
                 }
@@ -202,7 +203,7 @@ public class Blackjack {
                 else{user.setStatus("GAME_CHOICE22"); doubleGame();}
                 return ;
             case 2: // не работает
-                sendMessage("Функция временно не работает, выберите другую", chatId);
+                botInteraction.sendMessageInGameClient("Функция временно не работает, выберите другую", chatId);
                 break;
                 /*if(bet * 2 > balance){
                     sendMessage("Внимание! Новая ставка не может быть больше баланса, выберите другую функцию", chatId);
@@ -222,7 +223,7 @@ public class Blackjack {
 
                 getSomeCardPlayer(playerCards.get(count));
                 printAllCards(playerCards.get(count), 1);
-                sendMessage("     Ваш счёт: " + getScore(playerCards.get(count)), chatId);
+                botInteraction.sendMessageInGameClient("     Ваш счёт: " + getScore(playerCards.get(count)), chatId);
 
                 if(getScore(playerCards.get(count)) > 21) {
                     if(count == 1) endGame();
@@ -232,7 +233,7 @@ public class Blackjack {
                     return;
                 }
 
-                sendMessage("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
+                botInteraction.sendMessageInGameClient("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
                 if(count == 0){
                     user.setStatus("GAME_REPEAT_CHOICE21");
                 } else{
@@ -249,7 +250,7 @@ public class Blackjack {
             case 1:
                 getSomeCardPlayer(startPlayerCards);
                 printAllCards(startPlayerCards, 1);
-                sendMessage("     Ваш счёт: " + getScore(startPlayerCards), chatId);
+                botInteraction.sendMessageInGameClient("     Ваш счёт: " + getScore(startPlayerCards), chatId);
 
                 if(getScore(startPlayerCards) > 21) {
                     playerCards.add(startPlayerCards);
@@ -258,22 +259,22 @@ public class Blackjack {
                     return;
                 }
 
-                sendMessage("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
+                botInteraction.sendMessageInGameClient("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
                 user.setStatus(String.valueOf(UsersStatus.GAME_REPEAT_CHOICE1));
                 playerCards.add(startPlayerCards);
                 break;
 
             case 2:
                 if(bet * 2 > balance){
-                    sendMessage("Недостаточно денег для удвоения ставки, выберите другую функцию", chatId);
+                    botInteraction.sendMessageInGameClient("Недостаточно денег для удвоения ставки, выберите другую функцию", chatId);
                     playerCards.add(startPlayerCards);
                     return;
                 }
                 bet *=2;
-                sendMessage("Вы взяли карту.", chatId);
+                botInteraction.sendMessageInGameClient("Вы взяли карту.", chatId);
                 getSomeCardPlayer(startPlayerCards);
                 printAllCards(startPlayerCards, 1);
-                sendMessage("     Ваш счёт: " + getScore(startPlayerCards), chatId);
+                botInteraction.sendMessageInGameClient("     Ваш счёт: " + getScore(startPlayerCards), chatId);
 
                 playerCards.add(startPlayerCards);
                 endGame();
@@ -281,13 +282,13 @@ public class Blackjack {
 
             case 3:
                 if(balance < bet * 2){
-                    sendMessage("Недостаточно денег для ставки, выберите другую функцию", chatId);
+                    botInteraction.sendMessageInGameClient("Недостаточно денег для ставки, выберите другую функцию", chatId);
                     playerCards.add(startPlayerCards);
                     return ;
                 }
                 if (!((getScore(startPlayerCards) % 2 == 0 && Objects.equals(startPlayerCards.get(0).getValues(), startPlayerCards.get(1).getValues()))
                         || (startPlayerCards.get(0).getValues() >=10 && startPlayerCards.get(1).getValues() >=10) && (startPlayerCards.size()==2)) ){
-                    sendMessage("Не соблюдены условия сплита, выберите другую функцию", chatId);
+                    botInteraction.sendMessageInGameClient("Не соблюдены условия сплита, выберите другую функцию", chatId);
                     playerCards.add(startPlayerCards);
                     return ;
                 }
@@ -314,7 +315,7 @@ public class Blackjack {
         if(user.getStatus().equals("GAME_CHOICE1")) count =0;
         else {count = 1;}
 
-        sendMessage("Рука №" +(count+1), chatId);
+        botInteraction.sendMessageInGameClient("Рука №" +(count+1), chatId);
 
         ArrayList<Card> currentCards = playerCards.get(count);
 
@@ -327,7 +328,7 @@ public class Blackjack {
             return ;
         }
 
-        sendMessage("Желаете взять карту (1), удвоить ставку (2), ничего не делать (3)", chatId);
+        botInteraction.sendMessageInGameClient("Желаете взять карту (1), удвоить ставку (2), ничего не делать (3)", chatId);
         if(count == 0) {user.setStatus(String.valueOf(UsersStatus.GAME_CHOICE21));}
         else{user.setStatus(String.valueOf(UsersStatus.GAME_CHOICE22));}
     }
@@ -335,7 +336,7 @@ public class Blackjack {
 
 
     private void blackJack(){
-        sendMessage("Блэкджек!!! Вы выйграли: " + (1.5 * bet), chatId);
+        botInteraction.sendMessageInGameClient("Блэкджек!!! Вы выйграли: " + (1.5 * bet), chatId);
         balance += 1.5 * bet;
 
         user.setBalance(balance);
@@ -343,7 +344,7 @@ public class Blackjack {
     }
 
     private void win(){
-       sendMessage("Вы выйграли: " + (bet), chatId);
+        botInteraction.sendMessageInGameClient("Вы выйграли: " + (bet), chatId);
         balance += bet;
 
         user.setBalance(balance);
@@ -351,7 +352,7 @@ public class Blackjack {
     }
 
     private void lose(){
-        sendMessage("Вы проиграли: " + (bet), chatId);
+        botInteraction.sendMessageInGameClient("Вы проиграли: " + (bet), chatId);
         balance -= bet;
 
         user.setBalance(balance);
@@ -385,7 +386,7 @@ public class Blackjack {
     }
 
     private ArrayList<Card> getNewCards(){
-        sendMessage("Перетасовка карт", chatId);
+        botInteraction.sendMessageInGameClient("Перетасовка карт", chatId);
         return new ArrayList<>(Arrays.asList(
                 new Card(2, "Пики (♠)"), new Card(2, "Черва (♥)"), new Card(2, "Бубна (♦)"), new Card(2, "Трефа (♣)"),
                 new Card(3, "Пики (♠)"), new Card(3, "Черва (♥)"), new Card(3, "Бубна (♦)"), new Card(3, "Трефа (♣)"),
@@ -407,6 +408,14 @@ public class Blackjack {
     }
 
     private int getScore( ArrayList<Card> cards){ // Подсчёт счёта по картам, также простая проверка на два туза
+
+        for(int i = 0; i < cards.size(); i++){ // Если туз не последний, то метод неправильно будет считать количество очков
+            if(cards.get(i).getValues() == 14){
+                Card card = cards.remove(i);
+                cards.add(card);
+            }
+        }
+
         int sum = 0;
         for(Card card : cards){
             if(card.getValues() <= 10){
@@ -424,8 +433,8 @@ public class Blackjack {
 
 
     private void printAllCards(ArrayList<Card> card, int n){ // 1 if player; 0 if dealer
-        if(n == 1) sendMessage("Ваши карты: ", chatId);
-        else sendMessage("Карты дилера: ", chatId);
+        if(n == 1) botInteraction.sendMessageInGameClient("Ваши карты: ", chatId);
+        else botInteraction.sendMessageInGameClient("Карты дилера: ", chatId);
 
         StringBuilder message = new StringBuilder();
         for(Card currentCard : card){
@@ -456,16 +465,6 @@ public class Blackjack {
             message.append(currentCard.getSuit());
             message.append("\n");
         }
-        sendMessage(message.toString(), chatId);
+        botInteraction.sendMessageInGameClient(message.toString(), chatId);
     }
-
-    public void sendMessage(String message, Long chatId){
-        SendMessage sendMessage = new SendMessage(String.valueOf(chatId), message);
-        try {
-            gameClient.execute(sendMessage);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
-    }
-
 }
