@@ -1,33 +1,21 @@
 package com.example.bot.bots;
 
-import java.util.ArrayList;
-
-
-import com.example.bot.Constant;
 import com.example.bot.UsersStatus;
 import com.example.bot.entity.Users;
 import com.example.bot.repositories.UsersRepository;
 import game.Blackjack;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import org.telegram.telegrambots.meta.generics.TelegramClient;
 
-import java.util.List;
-import java.util.Locale;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+
 import java.util.Optional;
 
 @Component
 public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
 
-    private final TelegramClient telegramClient = new OkHttpTelegramClient(Constant.BOTTOKEN);
-    private final TelegramClient adminClient = new OkHttpTelegramClient(Constant.ADMINBOTTOKEN);
 
 
     @Autowired
@@ -37,8 +25,13 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
     private BotInteraction botInteraction;
     @Override
     public void consume(Update update) {
+        if(update.getMessage() == null){ return;}
+
         Long chatId = update.getMessage().getChatId();
         Optional<Users> user = usersRepository.findByChatId(chatId);
+
+        String username = update.getMessage().getFrom().getUserName();
+        if(username != null) System.out.println("Сейчас бот использует: @" + username);
 
         if(update.getMessage().hasText()){
             if(user.isPresent() && user.get().getStatus() !=null  && user.get().getStatus().equals("WAIT_MESSAGE")){
@@ -52,6 +45,7 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                     Double bet = Double.parseDouble(update.getMessage().getText());
                     if(usersRepository.findBalanceByChatId(chatId) < bet){
                         botInteraction.sendMessageInGameClient("Ставка не может быть больше вашего баланса", chatId);
+                        return;
                     }
                     usersRepository.setBet(bet, chatId);
                     user.get().setBet(bet);
@@ -238,47 +232,4 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
         }
     }
 
-
-
-    public void sendCustomKeyboard(String chatId) {
-        // 1. Prepare the rows and buttons
-        List<KeyboardRow> keyboard = new ArrayList<>();
-
-        // Create the first row
-        KeyboardRow row1 = new KeyboardRow();
-        row1.add("Да");
-        row1.add("Нет");
-
-        keyboard.add(row1);
-
-        // 2. Build the ReplyKeyboardMarkup
-        ReplyKeyboardMarkup keyboardMarkup = ReplyKeyboardMarkup.builder()
-                .keyboard(keyboard)           // The constructor/builder now requires the list
-                .resizeKeyboard(true)         // Recommended: makes buttons fit the screen
-                .oneTimeKeyboard(true)       // Keeps the keyboard visible after use
-                .selective(false)
-                .build();
-
-        // 3. Build the SendMessage with the markup
-        SendMessage message = SendMessage.builder()
-                .chatId(chatId)
-                .text("123")
-                .replyMarkup(keyboardMarkup)
-                .build();
-
-        try {
-            telegramClient.execute(message);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void sendMessageInAdmin(String massage, Long chatId){
-        SendMessage sendMessage = new SendMessage(String.valueOf(chatId), massage);
-        try {
-            adminClient.execute(sendMessage);
-        } catch (TelegramApiException e) {
-            e.printStackTrace();
-        }
-    }
 }

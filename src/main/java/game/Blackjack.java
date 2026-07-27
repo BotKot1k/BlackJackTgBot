@@ -7,6 +7,7 @@ import com.example.bot.entity.Users;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
@@ -79,13 +80,13 @@ public class Blackjack {
             user.setStatus(String.valueOf(UsersStatus.GAME_CHOICE1));
             playerCards.add(startPlayerCards);
 
-            System.out.println(playerCards.size());
-            System.out.println(playerCards.get(0));
+
             user.setDealerCards(dealerCards);
             user.setPlayerCards(playerCards);
             user.setCards(cards);
 
-            botInteraction.sendMessageInGameClient("Желаете взять карту (1), удвоить ставку (2), разделить карты (3), ничего не делать (4)", chatId);
+            botInteraction.sendCustomKeyboard("Желаете взять карту (1), удвоить ставку (2), разделить карты (3), ничего не делать (4)",
+                    new KeyboardRow("1", "2", "3","4") ,chatId);
             // Сделать клаву
         }
 
@@ -154,7 +155,8 @@ public class Blackjack {
                         return;
                     }
 
-                    botInteraction.sendMessageInGameClient("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
+                    botInteraction.sendCustomKeyboard("Желаете ли взять ещё карту? (Да / Нет)",
+                            new KeyboardRow("Да", "Нет") ,chatId);
 
                     playerCards.add(startPlayerCards);
                 } else{
@@ -172,7 +174,8 @@ public class Blackjack {
                         return;
                     }
 
-                    botInteraction.sendMessageInGameClient("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
+                    botInteraction.sendCustomKeyboard("Желаете ли взять ещё карту? (Да / Нет)",
+                            new KeyboardRow("Да", "Нет") ,chatId);
                 } else{
                     user.setStatus("GAME_CHOICE22");
                 }
@@ -188,7 +191,8 @@ public class Blackjack {
                         return;
                     }
 
-                    botInteraction.sendMessageInGameClient("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
+                    botInteraction.sendCustomKeyboard("Желаете ли взять ещё карту? (Да / Нет)",
+                            new KeyboardRow("Да", "Нет") ,chatId);
                 } else{
                     endGame();
                 }
@@ -237,7 +241,8 @@ public class Blackjack {
                     return;
                 }
 
-                botInteraction.sendMessageInGameClient("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
+                botInteraction.sendCustomKeyboard("Желаете ли взять ещё карту? (Да / Нет)",
+                        new KeyboardRow("Да", "Нет") ,chatId);
                 if(count == 0){
                     user.setStatus("GAME_REPEAT_CHOICE21");
                 } else{
@@ -268,7 +273,8 @@ public class Blackjack {
                     return;
                 }
 
-                botInteraction.sendMessageInGameClient("Желаете ли взять ещё карту? (Да / Нет)", chatId); // Добавить клаву
+                botInteraction.sendCustomKeyboard("Желаете ли взять ещё карту? (Да / Нет)",
+                        new KeyboardRow("Да", "Нет") ,chatId);
                 user.setStatus(String.valueOf(UsersStatus.GAME_REPEAT_CHOICE1));
                 playerCards.add(startPlayerCards);
                 break;
@@ -337,7 +343,9 @@ public class Blackjack {
             return ;
         }
 
-        botInteraction.sendMessageInGameClient("Желаете взять карту (1), удвоить ставку (2), ничего не делать (3)", chatId);
+        botInteraction.sendCustomKeyboard("Желаете взять карту (1), удвоить ставку (2), ничего не делать (3)",
+                new KeyboardRow("1", "2", "3") ,chatId);
+
         if(count == 0) {user.setStatus(String.valueOf(UsersStatus.GAME_CHOICE21));}
         else{user.setStatus(String.valueOf(UsersStatus.GAME_CHOICE22));}
     }
