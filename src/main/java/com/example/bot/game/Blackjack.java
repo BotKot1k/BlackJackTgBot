@@ -1,15 +1,10 @@
-package game;
+package com.example.bot.game;
 
-import com.example.bot.Constant;
 import com.example.bot.UsersStatus;
 import com.example.bot.bots.BotInteraction;
 import com.example.bot.entity.Users;
 import org.springframework.stereotype.Component;
-import org.telegram.telegrambots.client.okhttp.OkHttpTelegramClient;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
-import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import java.util.*;
 
@@ -24,13 +19,13 @@ public class Blackjack {
     private final ArrayList<Card> dealerCards;
 
     private boolean firstDealerAce = false;
-    private boolean insurance = false;
+    //private boolean insurance = false;
 
     private final Random rd = new Random();
     private final BotInteraction botInteraction = new BotInteraction();
 
-    private Long chatId;
-    private Users user;
+    private final Long chatId;
+    private final Users user;
 
 
     public Blackjack(Users user){
@@ -200,7 +195,7 @@ public class Blackjack {
         }
     }
 
-    public void choiceInDoubleGame(Integer numb){
+    public void choiceInDoubleGame(int numb){
         int count;
         if(user.getStatus().equals("GAME_CHOICE21")){count = 0;}
         else{count = 1;}
@@ -244,15 +239,15 @@ public class Blackjack {
                 botInteraction.sendCustomKeyboard("Желаете ли взять ещё карту? (Да / Нет)",
                         new KeyboardRow("Да", "Нет") ,chatId);
                 if(count == 0){
-                    user.setStatus("GAME_REPEAT_CHOICE21");
+                    user.setStatus(String.valueOf(UsersStatus.GAME_CHOICE21));
                 } else{
-                    user.setStatus("GAME_REPEAT_CHOICE22");
+                    user.setStatus(String.valueOf(UsersStatus.GAME_CHOICE22));
                 }
                 break;
         }
     }
 
-    public void choice(Integer choice){
+    public void choice(int choice){
         startPlayerCards = playerCards.get(0);
         playerCards.remove(0);
         switch (choice){

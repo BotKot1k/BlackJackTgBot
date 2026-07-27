@@ -1,7 +1,6 @@
 package com.example.bot.repositories;
 
 import com.example.bot.entity.Users;
-import game.Card;
 import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -9,7 +8,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.util.ArrayList;
 import java.util.Optional;
 
 @Repository
@@ -21,32 +19,6 @@ public interface UsersRepository extends JpaRepository<Users, Integer> {
     @Query(value = "SELECT balance FROM users WHERE chat_id = :chat_id", nativeQuery = true)
     Double findBalanceByChatId(@Param("chat_id") Long chatId);
 
-    @Query(value = "SELECT bet FROM users WHERE chat_id = :chat_id", nativeQuery = true)
-    Double findBetByChatId(@Param("chat_id") Long chatId);
-
-    @Query(value = "SELECT dealer_cards FROM users WHERE chat_id = :chat_id", nativeQuery = true)
-    Optional<ArrayList<Card>> findDealerCardsByChatId(@Param("chat_id") Long chatId);
-
-    @Query(value = "SELECT cards FROM users WHERE chat_id = :chat_id", nativeQuery = true)
-    Optional<ArrayList<Card>> findCardsByChatId(@Param("chat_id") Long chatId);
-
-    @Query(value = "SELECT player_cards FROM users WHERE chat_id = :chat_id", nativeQuery = true)
-    Optional<ArrayList<ArrayList<Card>>> findPlayerCardsByChatId(@Param("chat_id") Long chatId);
-
-    @Modifying
-    @Transactional
-    @Query(value = "UPDATE users SET playerCards = :playerCards WHERE chat_id = :chatId", nativeQuery = true)
-    void updatePlayerCards(@Param("playerCards") ArrayList<ArrayList<Card>> playerCards, @Param("chatId") Long chatId);
-
-    @Modifying
-    @Transactional
-    @Query(value = "UPDATE users SET dealerCards = :dealerCards WHERE chat_id = :chatId", nativeQuery = true)
-    void updateDealerCards(@Param("dealerCards") ArrayList<Card> dealerCards, @Param("chatId") Long chatId);
-
-    @Modifying
-    @Transactional
-    @Query(value = "UPDATE users SET cards = :cards WHERE chat_id = :chatId", nativeQuery = true)
-    void updateCards(@Param("cards") ArrayList<Card> cards, @Param("chatId") Long chatId);
 
     @Modifying
     @Transactional
@@ -57,9 +29,4 @@ public interface UsersRepository extends JpaRepository<Users, Integer> {
     @Transactional
     @Query(value = "UPDATE users SET bet = :bet WHERE chat_id = :chatId", nativeQuery = true)
     void setBet(@Param("bet") Double bet, @Param("chatId") Long chatId);
-
-    @Modifying
-    @Transactional
-    @Query(value = "UPDATE users SET balance = :balance WHERE chat_id = :chatId", nativeQuery = true)
-    void updateBalance(@Param("balance") Double balance, @Param("chatId") Long chatId);
 }

@@ -14,15 +14,15 @@ import java.util.List;
 
 @Component
 public class BotInteraction {
-    private TelegramClient gameClient = new OkHttpTelegramClient(Constant.BOTTOKEN);
-    private TelegramClient adminClient = new OkHttpTelegramClient(Constant.ADMINBOTTOKEN);
+    private final TelegramClient gameClient = new OkHttpTelegramClient(Constant.BOTTOKEN);
+    private final TelegramClient adminClient = new OkHttpTelegramClient(Constant.ADMINBOTTOKEN);
 
     public void sendMessageInGameClient(String message, Long chatId) {
         SendMessage sendMessage = new SendMessage(String.valueOf(chatId), message);
         try {
             gameClient.execute(sendMessage);
         } catch (TelegramApiException e) {
-            e.printStackTrace();
+            System.out.println("Не удалось отправить сообщение пользователю бота \nid пользователя: " + chatId);
         }
     }
 
@@ -31,7 +31,7 @@ public class BotInteraction {
         try {
             adminClient.execute(sendMessage);
         } catch (TelegramApiException e) {
-            e.printStackTrace();
+            System.out.println("Не удалось отправить сообщение админскому боту");
         }
     }
 
@@ -55,7 +55,7 @@ public class BotInteraction {
         try {
             gameClient.execute(sendMessage);
         } catch (TelegramApiException e) {
-            e.printStackTrace();
+            System.out.println("Не удалось отправить клавиатуру пользователю бота \nid пользователя: " + chatId);
         }
     }
 }

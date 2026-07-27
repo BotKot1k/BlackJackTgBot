@@ -3,7 +3,7 @@ package com.example.bot.bots;
 import com.example.bot.UsersStatus;
 import com.example.bot.entity.Users;
 import com.example.bot.repositories.UsersRepository;
-import game.Blackjack;
+import com.example.bot.game.Blackjack;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.longpolling.util.LongPollingSingleThreadUpdateConsumer;
@@ -101,7 +101,7 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
             if(user.isPresent() && user.get().getStatus() !=null  && (user.get().getStatus().equals("GAME_CHOICE21")||
                     user.get().getStatus().equals("GAME_CHOICE22"))){
                 try{
-                    Integer choice = Integer.parseInt(update.getMessage().getText());
+                    int choice = Integer.parseInt(update.getMessage().getText());
 
                     if(!(choice == 1 || choice == 2 || choice == 3)){
                         botInteraction.sendMessageInGameClient("Введите число от 1 до 3 включительно", chatId);

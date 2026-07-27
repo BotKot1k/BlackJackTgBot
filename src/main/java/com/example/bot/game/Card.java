@@ -1,4 +1,4 @@
-package game;
+package com.example.bot.game;
 
 import java.io.Serial;
 import java.io.Serializable;
