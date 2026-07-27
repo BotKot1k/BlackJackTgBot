@@ -41,7 +41,11 @@ public class Users {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "player_cards",columnDefinition = "jsonb")
     private ArrayList<ArrayList<Card>>  playerCards = new ArrayList<>();
-
+    /* Изменить бд
+    private boolean insurance;b // <- Страховка ставки
+    private boolean firstCardsDoubled; <- При разделении стола проверка на первое удвоение ставки
+    private boolean secondCardsDoubled; <- При разделении стола проверка на второе удвоение ставки
+    */
     public Users(Long chatId){
         this.chatId = chatId;
         balance = 1000.0;

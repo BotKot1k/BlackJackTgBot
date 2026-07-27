@@ -38,6 +38,7 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                 botInteraction.sendMessageInAdminClient(update.getMessage().getChatId() +" "+update.getMessage().getText());
                 usersRepository.setStatus(String.valueOf(UsersStatus.WAIT_NEW_COMMAND), chatId);
                 botInteraction.sendMessageInGameClient("Сообщение успешно доставлено администрации", chatId);
+                checkStatus(user.get());
             }
 
             if(user.isPresent() && user.get().getStatus() !=null  && user.get().getStatus().equals("WAIT_BET")){
@@ -73,6 +74,7 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                     Blackjack bj = new Blackjack(user.get());
                     bj.choice(choice);
 
+                    checkStatus(user.get());
                     usersRepository.save(user.get());
 
                     return;
@@ -91,6 +93,7 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                     Blackjack bj = new Blackjack(user.get());
 
                     bj.repeatChoice(message);
+                    checkStatus(user.get());
                     usersRepository.save(user.get());
                 } else{
                     botInteraction.sendMessageInGameClient("Введите Да или нет", chatId);
@@ -111,8 +114,8 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
 
                     bj.choiceInDoubleGame(choice);
 
+                    checkStatus(user.get());
                     usersRepository.save(user.get());
-
                     return;
                 } catch (NumberFormatException e){
                     botInteraction.sendMessageInGameClient("Введите целочисленное число", chatId);
@@ -131,43 +134,55 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                     command = massage.substring(1);
                 }
 
-                //sendMessage(command, chatId);
-                switch (command){
-                    case "start" :
-                       if(user.isEmpty()){
-                            Users newUser = new Users(chatId);
-                            usersRepository.save(newUser);
-                           botInteraction.sendMessageInGameClient("Вы успешно зарегистрировались", chatId);
-                       } else{
-                           botInteraction.sendMessageInGameClient("Вы уже зарегистрированы", chatId);
-                       }
-                       break;
+                commandInteraction(command, chatId);
+            }
+            //sendMessage(String.valueOf(chatId), chatId);
+        } else{
+            botInteraction.sendMessageInGameClient("Данный тип данных не обрабатывается", chatId);
+        }
+    }
 
-                    case "balance":
-                        Double balance = usersRepository.findBalanceByChatId(chatId);
-                        if(user.isEmpty()){
-                            botInteraction.sendMessageInGameClient("Напишите /start для работы с ботом", chatId);
-                            break;
-                        }
+    public void checkStatus(Users user){
+        if(user.getStatus().equals("WAIT_NEW_COMMAND")){ // Сделать сравнение через enum
+            botInteraction.sendMessageInGameClient("""
+                    /game - начать игру
+                    /balance - проверить баланс
+                    /help - связаться с администрацией
+                    /rules - ознакомиться с правилами
+                    """, user.getChatId());
+        }
+    }
 
-                        botInteraction.sendMessageInGameClient("Ваш баланс: " + balance, chatId);
-                        break;
-                    case "help":
-                        if(user.isEmpty()){
-                            botInteraction.sendMessageInGameClient("Напишите /start для работы с ботом", chatId);
-                            break;
-                        }
-                        usersRepository.setStatus(String.valueOf(UsersStatus.WAIT_MESSAGE), chatId);
-                        botInteraction.sendMessageInGameClient("Отправьте сообщение администратору", chatId);
-                        break;
+    public void commandInteraction(String command, Long chatId){
+        Optional<Users> user = usersRepository.findByChatId(chatId);
+        switch (command){
+            case "start" :
+                if(user.isEmpty()){
+                    Users newUser = new Users(chatId);
+                    newUser.setStatus(String.valueOf(UsersStatus.WAIT_NEW_COMMAND));
+                    usersRepository.save(newUser);
+                    botInteraction.sendMessageInGameClient("Вы успешно зарегистрировались", chatId);
+                }
+                break;
 
-                    case "rules":
-                        if (user.isEmpty()) {
-                            botInteraction.sendMessageInGameClient("Напишите /start для работы с ботом", chatId);
-                            break;
-                        }
+            case "balance":
+                Double balance = usersRepository.findBalanceByChatId(chatId);
 
-                        botInteraction.sendMessageInGameClient("""
+                if(checkUserRegistration(user, chatId)) break;
+
+                botInteraction.sendMessageInGameClient("Ваш баланс: " + balance, chatId);
+                break;
+            case "help":
+                if(checkUserRegistration(user, chatId)) break;
+                // Добавить сохранение прошлого статуса
+                usersRepository.setStatus(String.valueOf(UsersStatus.WAIT_MESSAGE), chatId);
+                botInteraction.sendMessageInGameClient("Отправьте сообщение администратору", chatId);
+                break;
+
+            case "rules":
+                if(checkUserRegistration(user, chatId)) break;
+
+                botInteraction.sendMessageInGameClient("""
                             Правила игры
                             
                              Цель игры
@@ -209,27 +224,25 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                             • Обычная победа — 1:1.
                             • При ничьей ставка возвращается.
                             """, chatId);
-                        break;
+                break;
 
-                    case "game":
-                        if(user.isEmpty()){
-                            botInteraction.sendMessageInGameClient("Напишите /start для работы с ботом", chatId);
-                            break;
-                        }
-
-                        if(user.get().getBalance() > 0){
-                            botInteraction.sendMessageInGameClient("Игра успешно началась", chatId) ;
-                            botInteraction.sendMessageInGameClient("Введите вашу ставку: ", chatId);
-                            usersRepository.setStatus(String.valueOf(UsersStatus.WAIT_BET), chatId);
-                        }
+            case "game":
+                if(checkUserRegistration(user, chatId) && user.get().getBalance() > 0 ){
+                    botInteraction.sendMessageInGameClient("Игра успешно началась", chatId) ;
+                    botInteraction.sendMessageInGameClient("Введите вашу ставку: ", chatId);
+                    usersRepository.setStatus(String.valueOf(UsersStatus.WAIT_BET), chatId);
                 }
-
-
-            }
-            //sendMessage(String.valueOf(chatId), chatId);
-        } else{
-            botInteraction.sendMessageInGameClient("Данный тип данных не обрабатывается", chatId);
+                break;
         }
+
+        user.ifPresent(this::checkStatus);
     }
 
+    public boolean checkUserRegistration(Optional<Users> user,Long chatId){
+        if(user.isEmpty()){
+            botInteraction.sendMessageInGameClient("Напишите /start для работы с ботом", chatId);
+            return false;
+        }
+        return true;
+    }
 }
