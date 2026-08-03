@@ -41,11 +41,11 @@ public class BotInitializer {
     public void registerCommands() {
 
         List<BotCommand> commands = new ArrayList<>();
-        commands.add(new BotCommand("start", "Запустить бота"));
+        commands.add(new BotCommand("game", "Начать игру"));
         commands.add(new BotCommand("balance", "Показать баланс"));
         commands.add(new BotCommand("help", "Связаться с администрацией"));
         commands.add(new BotCommand("rules", "Просмотреть правила игры"));
-        commands.add(new BotCommand("game", "Начать игру"));
+        commands.add(new BotCommand("start", "Запустить бота"));
 
         try {
             SetMyCommands setMyCommands = SetMyCommands.builder()

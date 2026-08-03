@@ -8,7 +8,6 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.Keyboard
 
 import java.util.*;
 
-@Component
 public class Blackjack {
     private Double balance;
     private Double bet;
@@ -62,7 +61,6 @@ public class Blackjack {
         getSomeCardPlayer(startPlayerCards);
         printAllCards(startPlayerCards, 1);
 
-        botInteraction.sendMessageInGameClient("\n     Ваш счёт: " + getScore(startPlayerCards), chatId);
 
 
         getSomeCardDealer();
@@ -95,7 +93,7 @@ public class Blackjack {
         }
 
         if(playerCards.isEmpty()){
-            user.setStatus(String.valueOf(UsersStatus.WAIT_NEW_COMMAND));
+            resetProperty();
             return;
         }
 
@@ -125,9 +123,7 @@ public class Blackjack {
                 botInteraction.sendMessageInGameClient("Ничья", chatId);
             }
         }
-        user.setDealerCards(new ArrayList<>());
-        user.setPlayerCards(new ArrayList<>());
-        user.setStatus(String.valueOf(UsersStatus.WAIT_NEW_COMMAND));
+        resetProperty();
     }
 
     public void repeatChoice(String answer){
@@ -467,9 +463,14 @@ public class Blackjack {
             message.append(currentCard.getSuit());
             message.append("\n");
         }
-        if(n == 1) message.append("Ваш счёт: ");
-        else message.append("Счёт дилера");
-        message.append(getScore(card));
+        message.append("Счёт: ").append(getScore(card));
         botInteraction.sendMessageInGameClient(message.toString(), chatId);
+    }
+
+    private void resetProperty(){
+        user.setBalance((double) 0);
+        user.setDealerCards(new ArrayList<>());
+        user.setPlayerCards(new ArrayList<>());
+        user.setStatus(String.valueOf(UsersStatus.WAIT_NEW_COMMAND));
     }
 }

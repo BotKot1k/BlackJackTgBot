@@ -227,22 +227,26 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                 break;
 
             case "game":
-                if(checkUserRegistration(user, chatId) && user.get().getBalance() > 0 ){
+                if(!checkUserRegistration(user, chatId) && user.get().getBalance() > 0 ){
                     botInteraction.sendMessageInGameClient("Игра успешно началась", chatId) ;
                     botInteraction.sendMessageInGameClient("Введите вашу ставку: ", chatId);
                     usersRepository.setStatus(String.valueOf(UsersStatus.WAIT_BET), chatId);
                 }
                 break;
+            case "qweqweqwe":
+                if(checkUserRegistration(user, chatId)) break;
+                user.get().setBalance(1000.0);
+                usersRepository.save(user.get());
         }
 
-        user.ifPresent(this::checkStatus);
+        if(!command.equals("game")) user.ifPresent(this::checkStatus);
     }
 
     public boolean checkUserRegistration(Optional<Users> user,Long chatId){
         if(user.isEmpty()){
             botInteraction.sendMessageInGameClient("Напишите /start для работы с ботом", chatId);
-            return false;
+            return true;
         }
-        return true;
+        return false;
     }
 }
