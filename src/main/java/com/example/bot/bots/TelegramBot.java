@@ -100,7 +100,21 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                 }
                 return;
             }
+            if(user.isPresent() && user.get().getStatus() != null
+                    && user.get().getStatus().equals(UsersStatus.GAME_WAIT_INSURANCE.toString())){
+                String message = update.getMessage().getText();
 
+
+                if(message.equals("да") || message.equals("Да") || message.equals("нет") || message.equals("Нет")){
+                    Blackjack bj = new Blackjack(user.get());
+
+                    bj.insuranceInteraction(message);
+                    checkStatus(user.get());
+                    usersRepository.save(user.get());
+                } else{
+                    botInteraction.sendMessageInGameClient("Введите Да или нет", chatId);
+                }
+            }
             if(user.isPresent() && user.get().getStatus() !=null  && (user.get().getStatus().equals("GAME_CHOICE21")||
                     user.get().getStatus().equals("GAME_CHOICE22"))){
                 try{

@@ -27,25 +27,25 @@ public class Blackjack {
     private final Users user;
 
 
-    public Blackjack(Users user){
+    public Blackjack(Users user) {
         this.user = user;
         chatId = user.getChatId();
 
-        if(this.user.getDealerCards() != null){
+        if (this.user.getDealerCards() != null) {
             this.dealerCards = this.user.getDealerCards();
-        } else{
+        } else {
             this.dealerCards = new ArrayList<>();
         }
 
-        if(this.user.getCards() != null){
+        if (this.user.getCards() != null) {
             this.cards = this.user.getCards();
-        } else{
+        } else {
             this.cards = new ArrayList<>();
         }
 
-        if(this.user.getPlayerCards() != null){
+        if (this.user.getPlayerCards() != null) {
             this.playerCards = this.user.getPlayerCards();
-        } else{
+        } else {
             this.playerCards = new ArrayList<>();
         }
 
@@ -54,7 +54,7 @@ public class Blackjack {
         this.balance = this.user.getBalance();
     }
 
-    public void startGame(){
+    public void startGame() {
         checkCards();
 
         getSomeCardPlayer(startPlayerCards);
@@ -62,14 +62,23 @@ public class Blackjack {
         printAllCards(startPlayerCards, 1);
 
 
-
         getSomeCardDealer();
         printAllCards(dealerCards, 0);
 
-        if(getScore(startPlayerCards) == 21 && !firstDealerAce ){
+        if (getScore(startPlayerCards) == 21 && !firstDealerAce) {
             blackJack();
             return;
         }
+
+
+        if (firstDealerAce) {
+            botInteraction.sendCustomKeyboard("Желаете ли вы застраховать ставку? (Да/Нет)",
+                    new KeyboardRow("Да", "Нет"), chatId);
+            user.setStatus(UsersStatus.GAME_WAIT_INSURANCE.toString());
+            return;
+
+        }
+
         user.setStatus(String.valueOf(UsersStatus.GAME_CHOICE1));
         playerCards.add(startPlayerCards);
 
@@ -79,110 +88,166 @@ public class Blackjack {
         user.setCards(cards);
 
         botInteraction.sendCustomKeyboard("Желаете взять карту (1), удвоить ставку (2), разделить карты (3), ничего не делать (4)",
-                new KeyboardRow("1", "2", "3","4") ,chatId);
+                new KeyboardRow("1", "2", "3", "4"), chatId);
         // Сделать клаву
     }
 
-    public void endGame(){
-        for(int i = 0; i < playerCards.size(); i++){
+    public void endGame() {
+        int count = 1;
+        if(playerCards.size() == 1 && playerCards.get(0).size() == 2 && getScore(playerCards.get(0)) == 21 &&
+        user.getInsurance() ){
+                getSomeCardDealer();
+                printAllCards(dealerCards, 0);
+
+                if(getScore(dealerCards) == 21){
+                    botInteraction.sendMessageInGameClient("Ничья, но страховка сыграла", chatId);
+                    bet *=2;
+                    win();
+                } else {
+                    botInteraction.sendMessageInGameClient("У вас блэкджек, но вы проиграли страховку", chatId);
+                    blackJack();
+                    bet /=2;
+                    lose();
+                }
+            resetProperty();
+            return;
+        }
+
+        for (int i = 0; i < playerCards.size(); i++) {
             ArrayList<Card> currentCards = playerCards.get(i);
-            if(getScore(currentCards) > 21){
+            if (getScore(currentCards) > 21) {
+                botInteraction.sendMessageInGameClient("Игра №" + count + "\nВаш счёт: " + getScore(currentCards), chatId);
+                count++;
                 lose();
                 playerCards.remove(currentCards);
             }
         }
 
-        if(playerCards.isEmpty()){
+        if (playerCards.isEmpty()) {
             resetProperty();
             return;
         }
 
 
-
-        while(getScore(dealerCards) < 17){
+        while (getScore(dealerCards) < 17) {
             getSomeCardDealer();
         }
         printAllCards(dealerCards, 0);
 
-        int count = 1;
+        if(getScore(dealerCards) == 21 && dealerCards.size() == 2 && user.getInsurance()){
+            botInteraction.sendMessageInGameClient("Ваша страховка сыграла", chatId);
+            bet *=2;
+            win();
+            bet /=2;
+        } else if((getScore(dealerCards) != 21 || dealerCards.size() != 2) && user.getInsurance()){
+            botInteraction.sendMessageInGameClient("Вы проиграли страховку", chatId);
+            bet /=2;
+            lose();
+            bet*=2;
+        }
 
-        for(ArrayList<Card> currentCards : playerCards){
-            botInteraction.sendMessageInGameClient("Игра №"+count +"\nВаш счёт: " + getScore(currentCards), chatId);
+        for (ArrayList<Card> currentCards : playerCards) {
+            botInteraction.sendMessageInGameClient("Игра №" + count + "\nВаш счёт: " + getScore(currentCards), chatId);
             count++;
 
-            if(getScore(dealerCards) > 21){
+            if (getScore(dealerCards) > 21) {
                 win();
                 continue;
             }
 
-            if(getScore(currentCards) > getScore(dealerCards)){
+            if (getScore(currentCards) > getScore(dealerCards)) {
                 win();
-            } else if (getScore(currentCards) < getScore(dealerCards)){
+            } else if (getScore(currentCards) < getScore(dealerCards)) {
                 lose();
-            } else{
+            } else if(getScore(dealerCards) == 21 && dealerCards.size() == 2 && getScore(dealerCards) == getScore(currentCards)) {
+                botInteraction.sendMessageInGameClient("У дилера блэкджек. Вы проиграли", chatId);
+                lose();
+            } else {
                 botInteraction.sendMessageInGameClient("Ничья", chatId);
             }
         }
         resetProperty();
     }
 
-    public void repeatChoice(String answer){
-        switch (user.getStatus()){
+    public void repeatChoice(String answer) {
+        switch (user.getStatus()) {
             case "GAME_REPEAT_CHOICE1":
-                if(answer.equals("да") || answer.equals("Да")){
+                if (answer.equals("да") || answer.equals("Да")) {
                     startPlayerCards = playerCards.get(0);
                     playerCards.remove(0);
 
                     getSomeCardPlayer(startPlayerCards);
                     printAllCards(startPlayerCards, 1);
 
-                    if(getScore(startPlayerCards) > 21) {
+                    if (getScore(startPlayerCards) > 21) {
                         playerCards.add(startPlayerCards);
                         endGame();
                         return;
                     }
 
                     botInteraction.sendCustomKeyboard("Желаете ли взять ещё карту? (Да / Нет)",
-                            new KeyboardRow("Да", "Нет") ,chatId);
+                            new KeyboardRow("Да", "Нет"), chatId);
 
                     playerCards.add(startPlayerCards);
-                } else{
+                } else {
                     endGame();
                 }
                 break;
             case "GAME_REPEAT_CHOICE21":
-                if(answer.equals("да")){
+                if (answer.equals("да")) {
                     getSomeCardPlayer(playerCards.get(0));
                     printAllCards(playerCards.get(0), 1);
 
-                    if(getScore(playerCards.get(0)) > 21) {
+                    if (getScore(playerCards.get(0)) > 21) {
                         user.setStatus("GAME_CHOICE22");
                         return;
                     }
 
                     botInteraction.sendCustomKeyboard("Желаете ли взять ещё карту? (Да / Нет)",
-                            new KeyboardRow("Да", "Нет") ,chatId);
-                } else{
+                            new KeyboardRow("Да", "Нет"), chatId);
+                } else {
                     user.setStatus("GAME_CHOICE22");
                 }
                 break;
             case "GAME_REPEAT_CHOICE22":
-                if(answer.equals("да")){
+                if (answer.equals("да")) {
                     getSomeCardPlayer(playerCards.get(1));
                     printAllCards(playerCards.get(1), 1);
 
-                    if(getScore(playerCards.get(1)) > 21) {
+                    if (getScore(playerCards.get(1)) > 21) {
                         endGame();
                         return;
                     }
 
                     botInteraction.sendCustomKeyboard("Желаете ли взять ещё карту? (Да / Нет)",
-                            new KeyboardRow("Да", "Нет") ,chatId);
-                } else{
+                            new KeyboardRow("Да", "Нет"), chatId);
+                } else {
                     endGame();
                 }
                 break;
         }
+    }
+
+    public void insuranceInteraction(String answer) {// <- переименовать мб
+        if(balance < bet/2){
+            botInteraction.sendMessageInGameClient("Недостаточно денег для страхования ставки", chatId);
+            botInteraction.sendCustomKeyboard("Желаете взять карту (1), удвоить ставку (2), разделить карты (3), ничего не делать (4)",
+                    new KeyboardRow("1", "2", "3", "4"), chatId);
+            user.setStatus(UsersStatus.GAME_CHOICE1.toString());
+        }
+        if(getScore(playerCards.get(0)) == 21 && answer.equals("Да")){
+            user.setInsurance(true);
+            endGame();
+            return;
+        } else if(answer.equals("Да")){
+            user.setInsurance(true);
+            endGame();
+        }
+        botInteraction.sendCustomKeyboard("Желаете взять карту (1), удвоить ставку (2), разделить карты (3), ничего не делать (4)",
+                new KeyboardRow("1", "2", "3", "4"), chatId);
+        user.setStatus(UsersStatus.GAME_CHOICE1.toString());
+
+
     }
 
     public void choiceInDoubleGame(int numb){
@@ -472,5 +537,7 @@ public class Blackjack {
         user.setDealerCards(new ArrayList<>());
         user.setPlayerCards(new ArrayList<>());
         user.setStatus(String.valueOf(UsersStatus.WAIT_NEW_COMMAND));
+        user.setInsurance(false);
+        user.setStatusInDoubleGame("");
     }
 }

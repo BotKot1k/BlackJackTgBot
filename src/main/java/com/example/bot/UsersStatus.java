@@ -4,6 +4,7 @@ public enum UsersStatus {
     WAIT_NEW_COMMAND,
     WAIT_MESSAGE, // Для команды /help
     WAIT_BET, // Ввод ставки в начале игры
+    GAME_WAIT_INSURANCE,
     GAME_CHOICE1, // Выбор игрока после сдачи двух карт
     GAME_REPEAT_CHOICE1, // Выбор игрока, если он решил добирать карты
     // Дальше если в GAME_CHOICE1 была выбрана цифра 3, т.е. разделение текущей руки на 2 игры
