@@ -75,6 +75,14 @@ public class Blackjack {
             botInteraction.sendCustomKeyboard("Желаете ли вы застраховать ставку? (Да/Нет)",
                     new KeyboardRow("Да", "Нет"), chatId);
             user.setStatus(UsersStatus.GAME_WAIT_INSURANCE.toString());
+
+            playerCards.add(startPlayerCards);
+
+
+            user.setDealerCards(dealerCards);
+            user.setPlayerCards(playerCards);
+            user.setCards(cards);
+
             return;
 
         }
@@ -124,8 +132,10 @@ public class Blackjack {
         }
 
         if (playerCards.isEmpty()) {
-            resetProperty();
-            return;
+            if(!user.getInsurance()) {
+                resetProperty();
+                return;
+            }
         }
 
 
@@ -144,6 +154,10 @@ public class Blackjack {
             bet /=2;
             lose();
             bet*=2;
+        }
+        if(user.getInsurance() && playerCards.isEmpty()){
+            resetProperty();
+            return;
         }
 
         for (ArrayList<Card> currentCards : playerCards) {
@@ -241,7 +255,7 @@ public class Blackjack {
             return;
         } else if(answer.equals("Да")){
             user.setInsurance(true);
-            endGame();
+            botInteraction.sendMessageInGameClient("Ставка успешно застрахована", chatId);
         }
         botInteraction.sendCustomKeyboard("Желаете взять карту (1), удвоить ставку (2), разделить карты (3), ничего не делать (4)",
                 new KeyboardRow("1", "2", "3", "4"), chatId);
@@ -533,7 +547,6 @@ public class Blackjack {
     }
 
     private void resetProperty(){
-        user.setBalance((double) 0);
         user.setDealerCards(new ArrayList<>());
         user.setPlayerCards(new ArrayList<>());
         user.setStatus(String.valueOf(UsersStatus.WAIT_NEW_COMMAND));

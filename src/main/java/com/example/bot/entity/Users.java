@@ -43,11 +43,14 @@ public class Users {
     private ArrayList<ArrayList<Card>>  playerCards = new ArrayList<>();
     // Изменить бд
     private boolean insurance; // <- Страховка ставки
+    @Column(name = "status_in_double_game")
     private String statusInDoubleGame; // <- Для отображения удвоения руки при двойной игре или "One", "Two", "Both", ""
 
     public Users(Long chatId){
         this.chatId = chatId;
         balance = 1000.0;
+        insurance = false;
+        statusInDoubleGame = "";
     }
 
     public boolean getInsurance(){
