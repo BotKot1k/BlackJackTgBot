@@ -1,5 +1,6 @@
 package com.example.bot.entity;
 
+import com.example.bot.UsersStatus;
 import com.example.bot.game.Card;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -33,7 +34,6 @@ public class Users {
     @Column(name = "dealer_cards",columnDefinition = "jsonb")
     private ArrayList<Card> dealerCards = new ArrayList<>();
 
-
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private ArrayList<Card>  cards = new ArrayList<>();
@@ -51,6 +51,7 @@ public class Users {
         balance = 1000.0;
         insurance = false;
         statusInDoubleGame = "";
+        status = UsersStatus.WAIT_NEW_COMMAND.toString();
     }
 
     public boolean getInsurance(){

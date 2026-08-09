@@ -34,14 +34,14 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
         if(username != null) System.out.println("Сейчас бот использует: @" + username);
 
         if(update.getMessage().hasText()){
-            if(user.isPresent() && user.get().getStatus() !=null  && user.get().getStatus().equals("WAIT_MESSAGE")){
+            if(user.isPresent() && user.get().getStatus().equals(UsersStatus.WAIT_MESSAGE.toString())){
                 botInteraction.sendMessageInAdminClient(update.getMessage().getChatId() +" "+update.getMessage().getText());
                 usersRepository.setStatus(String.valueOf(UsersStatus.WAIT_NEW_COMMAND), chatId);
                 botInteraction.sendMessageInGameClient("Сообщение успешно доставлено администрации", chatId);
                 checkStatus(user.get());
             }
 
-            if(user.isPresent() && user.get().getStatus() !=null  && user.get().getStatus().equals("WAIT_BET")){
+            if(user.isPresent() && user.get().getStatus().equals(UsersStatus.WAIT_BET.toString())){
                 try{
                     Double bet = Double.parseDouble(update.getMessage().getText());
                     if(usersRepository.findBalanceByChatId(chatId) < bet){
@@ -63,7 +63,7 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                 }
             }
 
-            if(user.isPresent() && user.get().getStatus() !=null  && user.get().getStatus().equals("GAME_CHOICE1")){
+            if(user.isPresent() && user.get().getStatus().equals(UsersStatus.GAME_CHOICE1.toString())){
                 try{
                     int choice = Integer.parseInt(update.getMessage().getText());
 
@@ -84,8 +84,10 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                 }
             }
 
-            if(user.isPresent() && user.get().getStatus() !=null  && (user.get().getStatus().equals("GAME_REPEAT_CHOICE1")||
-                    user.get().getStatus().equals("GAME_REPEAT_CHOICE21") || user.get().getStatus().equals("GAME_REPEAT_CHOICE22"))){
+            if(user.isPresent() && (user.get().getStatus().equals(UsersStatus.GAME_REPEAT_CHOICE1.toString())
+                    || user.get().getStatus().equals(UsersStatus.GAME_REPEAT_CHOICE21.toString())
+                    || user.get().getStatus().equals(UsersStatus.GAME_REPEAT_CHOICE22.toString()))){
+
                 String message = update.getMessage().getText();
 
 
@@ -100,8 +102,8 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                 }
                 return;
             }
-            if(user.isPresent() && user.get().getStatus() != null
-                    && user.get().getStatus().equals(UsersStatus.GAME_WAIT_INSURANCE.toString())){
+
+            if(user.isPresent() && user.get().getStatus().equals(UsersStatus.GAME_WAIT_INSURANCE.toString())){
                 String message = update.getMessage().getText();
 
 
@@ -115,8 +117,9 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                     botInteraction.sendMessageInGameClient("Введите Да или нет", chatId);
                 }
             }
-            if(user.isPresent() && user.get().getStatus() !=null  && (user.get().getStatus().equals("GAME_CHOICE21")||
-                    user.get().getStatus().equals("GAME_CHOICE22"))){
+
+            if(user.isPresent() && user.get().getStatus() !=null  && (user.get().getStatus().equals(UsersStatus.GAME_CHOICE21.toString())||
+                    user.get().getStatus().equals(UsersStatus.GAME_CHOICE22.toString()))){
                 try{
                     int choice = Integer.parseInt(update.getMessage().getText());
 

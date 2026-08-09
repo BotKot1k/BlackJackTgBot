@@ -17,7 +17,7 @@ import java.util.List;
 @Component
 public class BotInitializer {
 
-    private TelegramClient telegramClient = new OkHttpTelegramClient(Constant.BOTTOKEN);
+    private final TelegramClient telegramClient = new OkHttpTelegramClient(Constant.BOTTOKEN);
 
     private final TelegramBot telegramBot;
     private final AdminTelegramBot adminTelegramBot;
@@ -54,6 +54,7 @@ public class BotInitializer {
                     .build();
             telegramClient.execute(setMyCommands);
         } catch (TelegramApiException e) {
+            System.out.println("Не удалось создать команды");
         }
     }
 }

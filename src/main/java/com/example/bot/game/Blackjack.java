@@ -3,7 +3,6 @@ package com.example.bot.game;
 import com.example.bot.UsersStatus;
 import com.example.bot.bots.BotInteraction;
 import com.example.bot.entity.Users;
-import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
 import java.util.*;
@@ -18,7 +17,6 @@ public class Blackjack {
     private final ArrayList<Card> dealerCards;
 
     private boolean firstDealerAce = false;
-    //private boolean insurance = false;
 
     private final Random rd = new Random();
     private final BotInteraction botInteraction = new BotInteraction();
@@ -54,7 +52,7 @@ public class Blackjack {
         this.balance = this.user.getBalance();
     }
 
-    public void startGame() {
+    public void startGame() { //Точка входа в игру
         checkCards();
 
         getSomeCardPlayer(startPlayerCards);
@@ -100,7 +98,7 @@ public class Blackjack {
         // Сделать клаву
     }
 
-    public void endGame() {
+    public void endGame() { // Точка выхода из игры
         int count = 1;
         if(playerCards.size() == 1 && playerCards.get(0).size() == 2 && getScore(playerCards.get(0)) == 21 &&
         user.getInsurance() ){
@@ -120,13 +118,22 @@ public class Blackjack {
             resetProperty();
             return;
         }
-
+        if(playerCards.size() == 2 && user.getStatusInDoubleGame().equals("Both")){
+            bet *= 2;
+        }
         for (int i = 0; i < playerCards.size(); i++) {
             ArrayList<Card> currentCards = playerCards.get(i);
             if (getScore(currentCards) > 21) {
                 botInteraction.sendMessageInGameClient("Игра №" + count + "\nВаш счёт: " + getScore(currentCards), chatId);
                 count++;
+                if(!user.getStatusInDoubleGame().isEmpty() && (i == 0 && user.getStatusInDoubleGame().equals("One"))
+                        || (i == 1 && user.getStatusInDoubleGame().equals("Two"))){
+                    bet *= 2;
+                    lose();
+                    bet /= 2;
+                } else{
                 lose();
+                }
                 playerCards.remove(currentCards);
             }
         }
@@ -162,6 +169,15 @@ public class Blackjack {
 
         for (ArrayList<Card> currentCards : playerCards) {
             botInteraction.sendMessageInGameClient("Игра №" + count + "\nВаш счёт: " + getScore(currentCards), chatId);
+
+
+            boolean doubledBet = false;
+            if(!user.getStatusInDoubleGame().isEmpty() && (count-1 == 0 && user.getStatusInDoubleGame().equals("One"))
+                    || (count-1 == 1 && user.getStatusInDoubleGame().equals("Two"))) {
+                bet *= 2;
+                doubledBet = true;
+            }
+
             count++;
 
             if (getScore(dealerCards) > 21) {
@@ -179,11 +195,15 @@ public class Blackjack {
             } else {
                 botInteraction.sendMessageInGameClient("Ничья", chatId);
             }
+
+            if(doubledBet){
+                bet /=2;
+            }
         }
         resetProperty();
     }
 
-    public void repeatChoice(String answer) {
+    public void repeatChoice(String answer) { //Обработка повторных взятий карт при обычном выборе
         switch (user.getStatus()) {
             case "GAME_REPEAT_CHOICE1":
                 if (answer.equals("да") || answer.equals("Да")) {
@@ -221,6 +241,7 @@ public class Blackjack {
                             new KeyboardRow("Да", "Нет"), chatId);
                 } else {
                     user.setStatus("GAME_CHOICE22");
+                    doubleGame();
                 }
                 break;
             case "GAME_REPEAT_CHOICE22":
@@ -242,8 +263,8 @@ public class Blackjack {
         }
     }
 
-    public void insuranceInteraction(String answer) {// <- переименовать мб
-        if(balance < bet/2){
+    public void insuranceInteraction(String answer) { // Пользователь выбрал страховку после взятия карт
+        if(balance < bet * 1.5){
             botInteraction.sendMessageInGameClient("Недостаточно денег для страхования ставки", chatId);
             botInteraction.sendCustomKeyboard("Желаете взять карту (1), удвоить ставку (2), разделить карты (3), ничего не делать (4)",
                     new KeyboardRow("1", "2", "3", "4"), chatId);
@@ -264,7 +285,7 @@ public class Blackjack {
 
     }
 
-    public void choiceInDoubleGame(int numb){
+    public void choiceInDoubleGame(int numb){ // Выбор пользователя, что делать с текущей рукой
         int count;
         if(user.getStatus().equals("GAME_CHOICE21")){count = 0;}
         else{count = 1;}
@@ -274,23 +295,35 @@ public class Blackjack {
                 if(user.getStatus().equals("GAME_CHOICE22")) {endGame();}
                 else{user.setStatus("GAME_CHOICE22"); doubleGame();}
                 return ;
-            case 2: // не работает
-                botInteraction.sendMessageInGameClient("Функция временно не работает, выберите другую", chatId);
-                break;
-                /*if(bet * 2 > balance){
-                    sendMessage("Внимание! Новая ставка не может быть больше баланса, выберите другую функцию", chatId);
-                    return ;
+            case 2:
+                if(user.getStatus().equals(UsersStatus.GAME_CHOICE21.toString()) && bet * 2 > balance){
+                    botInteraction.sendMessageInGameClient("Внимание! Новая ставка не может быть больше баланса, выберите другую функцию", chatId);
+                    return;
                 }
-                bet *=2; // Вот корень зла
+                if(user.getStatus().equals(UsersStatus.GAME_CHOICE22.toString()) && user.getStatusInDoubleGame().isEmpty() && bet * 2 > balance){
+                    botInteraction.sendMessageInGameClient("Внимание! Новая ставка не может быть больше баланса, выберите другую функцию", chatId);
+                    return;
+                } else if(user.getStatus().equals(UsersStatus.GAME_CHOICE22.toString()) && user.getStatusInDoubleGame().equals("One") && bet * 4 > balance ){
+                    botInteraction.sendMessageInGameClient("Внимание! Новая ставка не может быть больше баланса, выберите другую функцию", chatId);
+                    return;
+                }
 
-                System.out.println("Вы взяли карту.");
+                if(user.getStatus().equals(UsersStatus.GAME_CHOICE21.toString())){
+                    user.setStatusInDoubleGame("One");
+                }
+
+                if(user.getStatus().equals(UsersStatus.GAME_CHOICE22.toString()) && user.getStatusInDoubleGame().isEmpty()){
+                    user.setStatusInDoubleGame("Two");
+                } else if(user.getStatus().equals(UsersStatus.GAME_CHOICE22.toString()) && user.getStatusInDoubleGame().equals("One")){
+                    user.setStatusInDoubleGame("Both");
+                }
+
                 getSomeCardPlayer(playerCards.get(count));
                 printAllCards(playerCards.get(count), 1);
-                sendMessage("     Ваш счёт: " + getScore(playerCards.get(count)), chatId);
 
                 if(count == 1){endGame();}
-                else{user.setStatus("GAME_CHOICE22");}
-                return ;*/
+                else{user.setStatus("GAME_CHOICE22"); doubleGame();}
+                return ;
             case 1:
 
                 getSomeCardPlayer(playerCards.get(count));
@@ -307,15 +340,15 @@ public class Blackjack {
                 botInteraction.sendCustomKeyboard("Желаете ли взять ещё карту? (Да / Нет)",
                         new KeyboardRow("Да", "Нет") ,chatId);
                 if(count == 0){
-                    user.setStatus(String.valueOf(UsersStatus.GAME_CHOICE21));
+                    user.setStatus(String.valueOf(UsersStatus.GAME_REPEAT_CHOICE21));
                 } else{
-                    user.setStatus(String.valueOf(UsersStatus.GAME_CHOICE22));
+                    user.setStatus(String.valueOf(UsersStatus.GAME_REPEAT_CHOICE22));
                 }
                 break;
         }
     }
 
-    public void choice(int choice){
+    public void choice(int choice){ // выбор игрока после взятия карт
         startPlayerCards = playerCards.get(0);
         playerCards.remove(0);
         switch (choice){
@@ -385,7 +418,7 @@ public class Blackjack {
         }
     }
 
-    private void doubleGame(){
+    private void doubleGame(){ // В случае разделения руки на две отдельных выдаёт сразу карты и запускает процесс выбора
         int count;
         if(user.getStatus().equals("GAME_CHOICE1")) count =0;
         else {count = 1;}
@@ -417,7 +450,6 @@ public class Blackjack {
         balance += 1.5 * bet;
 
         user.setBalance(balance);
-        user.setStatus(String.valueOf(UsersStatus.WAIT_NEW_COMMAND));
     }
 
     private void win(){
@@ -456,13 +488,13 @@ public class Blackjack {
         checkCards();
     }
 
-    private void checkCards(){
+    private void checkCards(){ // Необходимость перетасовки колоды
         if(cards == null || cards.isEmpty() || cards.size() < 17){
             cards = getNewCards();
         }
     }
 
-    private ArrayList<Card> getNewCards(){
+    private ArrayList<Card> getNewCards(){ // Создания нового массивая с картами
         botInteraction.sendMessageInGameClient("Перетасовка карт", chatId);
         return new ArrayList<>(Arrays.asList(
                 new Card(2, "Пики (♠)"), new Card(2, "Черва (♥)"), new Card(2, "Бубна (♦)"), new Card(2, "Трефа (♣)"),
