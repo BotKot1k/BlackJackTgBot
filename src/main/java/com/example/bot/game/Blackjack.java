@@ -269,6 +269,13 @@ public class Blackjack {
             botInteraction.sendCustomKeyboard("Желаете взять карту (1), удвоить ставку (2), разделить карты (3), ничего не делать (4)",
                     new KeyboardRow("1", "2", "3", "4"), chatId);
             user.setStatus(UsersStatus.GAME_CHOICE1.toString());
+            return;
+        }
+        if(answer.equals("Нет") || answer.equals("нет")){
+            botInteraction.sendCustomKeyboard("Желаете взять карту (1), удвоить ставку (2), разделить карты (3), ничего не делать (4)",
+                    new KeyboardRow("1", "2", "3", "4"), chatId);
+            user.setStatus(UsersStatus.GAME_CHOICE1.toString());
+            return;
         }
         if(getScore(playerCards.get(0)) == 21 && answer.equals("Да")){
             user.setInsurance(true);
