@@ -34,6 +34,22 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
         if(username != null) System.out.println("Сейчас бот использует: @" + username);
 
         if(update.getMessage().hasText()){
+            String message = update.getMessage().getText();
+
+            if(message.charAt(0) == '/'){
+                String command;
+                int spaceIndex = message.indexOf(' ');
+                if(spaceIndex != -1){
+                    command = message.substring(1, spaceIndex);
+                } else{
+                    command = message.substring(1);
+                }
+
+                commandInteraction(command, chatId);
+                return;
+            }
+
+
             if(user.isPresent() && user.get().getStatus().equals(UsersStatus.WAIT_MESSAGE.toString())){
                 botInteraction.sendMessageInAdminClient(update.getMessage().getChatId() +" "+update.getMessage().getText());
                 usersRepository.setStatus(String.valueOf(UsersStatus.WAIT_NEW_COMMAND), chatId);
@@ -88,10 +104,9 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                     || user.get().getStatus().equals(UsersStatus.GAME_REPEAT_CHOICE21.toString())
                     || user.get().getStatus().equals(UsersStatus.GAME_REPEAT_CHOICE22.toString()))){
 
-                String message = update.getMessage().getText();
 
 
-                if(message.equals("да") || message.equals("Да") || message.equals("нет") || message.equals("Нет")){
+                if(message.equalsIgnoreCase("да") || message.equalsIgnoreCase("нет")){
                     Blackjack bj = new Blackjack(user.get());
 
                     bj.repeatChoice(message);
@@ -104,10 +119,9 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
             }
 
             if(user.isPresent() && user.get().getStatus().equals(UsersStatus.GAME_WAIT_INSURANCE.toString())){
-                String message = update.getMessage().getText();
 
 
-                if(message.equals("да") || message.equals("Да") || message.equals("нет") || message.equals("Нет")){
+                if(message.equalsIgnoreCase("да") || message.equalsIgnoreCase("нет")){
                     Blackjack bj = new Blackjack(user.get());
 
                     bj.insuranceInteraction(message);
@@ -133,26 +147,12 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
 
                     checkStatus(user.get());
                     usersRepository.save(user.get());
-                    return;
                 } catch (NumberFormatException e){
                     botInteraction.sendMessageInGameClient("Введите целочисленное число", chatId);
-                    return;
                 }
             }
 
-            String massage = update.getMessage().getText();
 
-            if(massage.charAt(0) == '/'){
-                String command;
-                int spaceIndex = massage.indexOf(' ');
-                if(spaceIndex != -1){
-                    command = massage.substring(1, spaceIndex);
-                } else{
-                    command = massage.substring(1);
-                }
-
-                commandInteraction(command, chatId);
-            }
             //sendMessage(String.valueOf(chatId), chatId);
         } else{
             botInteraction.sendMessageInGameClient("Данный тип данных не обрабатывается", chatId);
@@ -172,6 +172,7 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
 
     public void commandInteraction(String command, Long chatId){
         Optional<Users> user = usersRepository.findByChatId(chatId);
+        boolean inGame = user.isPresent() && !user.get().getStatus().equals(UsersStatus.WAIT_NEW_COMMAND.toString()); //if user in game
         switch (command){
             case "start" :
                 if(user.isEmpty()){
@@ -183,9 +184,10 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                 break;
 
             case "balance":
+                if(checkUserRegistration(user, chatId)) break;
                 Double balance = usersRepository.findBalanceByChatId(chatId);
 
-                if(checkUserRegistration(user, chatId)) break;
+
 
                 botInteraction.sendMessageInGameClient("Ваш баланс: " + balance, chatId);
                 break;
@@ -197,7 +199,7 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                 break;
 
             case "rules":
-                if(checkUserRegistration(user, chatId)) break;
+                if(checkUserRegistration(user, chatId) || inGame) break;
 
                 botInteraction.sendMessageInGameClient("""
                             Правила игры
@@ -244,7 +246,7 @@ public class TelegramBot implements LongPollingSingleThreadUpdateConsumer {
                 break;
 
             case "game":
-                if(!checkUserRegistration(user, chatId) && user.get().getBalance() > 0 ){
+                if(!checkUserRegistration(user, chatId) && user.get().getBalance() > 0  || inGame){
                     botInteraction.sendMessageInGameClient("Игра успешно началась", chatId) ;
                     botInteraction.sendMessageInGameClient("Введите вашу ставку: ", chatId);
                     usersRepository.setStatus(String.valueOf(UsersStatus.WAIT_BET), chatId);
